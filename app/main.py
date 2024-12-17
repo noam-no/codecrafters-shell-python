@@ -2,14 +2,15 @@
 
 # Importing libraries
 from sys import exit, stdout
-from os import getcwd
+from os import getcwd, environ, path, listdir
 from re import match
 from signal import signal, SIGINT
 from getpass import getuser
 from socket import gethostname
-
-from .ansi_customization import ANSI_CHAR, graphics_text_parser
-
+try:
+    from .ansi_customization import ANSI_CHAR, graphics_text_parser
+except (ModuleNotFoundError, ImportError) as exceptions:
+    from ansi_customization import ANSI_CHAR, graphics_text_parser
 # Constants
 # To use later codecrafter doesn't like it for now ...
 """
@@ -18,10 +19,12 @@ MACHINE_USERNAME = graphics_text_parser(USERNAME+'@'+gethostname(), "BOLD", "BRI
 PWD = graphics_text_parser(getcwd().replace(f"/home/{USERNAME}", "~"), "BOLD", "BRIGHT_BLUE")
 SHELL_PROMPT = f"{MACHINE_USERNAME+':'+PWD}$ "
 """
+
+
+PATH = environ["PATH"].split(":") # PATH of the system for binaries
 SHELL_PROMPT = "$ "
 EXIT_CODE_DEFAULT = 0
 EXIT_CODE_ERROR = 1
-
 COMMANDS = {"exit": None,
             "echo": None,
             "type": None}
@@ -53,6 +56,14 @@ def type_command(args):
             if arg in BUILT_IN:
                 print(f"{arg} is a shell builtin")
             else:
+                for p in PATH:
+                    try:
+                        binaries = [f for f in listdir(p) if path.isfile(path.join(p, f))]
+                    except FileNotFoundError:
+                        pass
+                    if arg in binaries:
+                        print(f"{arg} is {path.join(p, arg)}")
+                        return
                 print(f"bash: type: {arg}: not found")
 
 COMMANDS.update({
