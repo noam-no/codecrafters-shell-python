@@ -68,6 +68,9 @@ def type_command(args):
                         return
                 print(f"bash: type: {arg}: not found")
 
+def pwd_command(args):
+    print(getcwd())
+
 # run a command defined in the PATH
 def sourced_command(args):
     try:
@@ -87,6 +90,7 @@ BUILT_IN_COMMANDS.update({
                 "exit": exit_command,
                 "echo": echo_command,
                 "type": type_command,
+                "pwd": pwd_command,
                 
                 })
 # source all available binaries
@@ -97,8 +101,8 @@ def sourcing():
         except FileNotFoundError:
             pass
         for binary in binaries:
-            # if (binary not in BUILT_IN_COMMANDS) and (binary not in SOURCED_COMMANDS):
-            SOURCED_COMMANDS[binary] = path.join(p, binary)
+            if (binary not in BUILT_IN_COMMANDS) and (binary not in SOURCED_COMMANDS):
+                SOURCED_COMMANDS[binary] = path.join(p, binary)
 
 def command_parser(raw_input):
     command = raw_input.split()
@@ -121,6 +125,7 @@ def signal_handler(sig, frame):
     stdout.flush()
 
 def main():
+    
     try:
         signal(SIGINT, signal_handler)
         stdout.write(SHELL_PROMPT)
