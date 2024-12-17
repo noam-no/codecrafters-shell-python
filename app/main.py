@@ -2,7 +2,7 @@
 
 # Importing libraries
 from sys import exit, stdout
-from os import getcwd, environ, path, listdir
+from os import getcwd, environ, path, listdir, chdir
 from re import match
 from signal import signal, SIGINT
 from getpass import getuser
@@ -71,6 +71,23 @@ def type_command(args):
 def pwd_command(args):
     print(getcwd())
 
+def cd_command(args):
+    if len(args) == 0:
+        try:
+            path = environ["HOME"]
+            chdir(path)
+        except FileNotFoundError:
+            print(f"bash: cd: {path}: No such file or directory")
+        return
+    elif len(args) > 1:
+        print("bash: cd: too many arguments")
+        return
+    else:
+        try:
+            chdir(args[0])
+        except FileNotFoundError:
+            print(f"bash: cd: {args[0]}: No such file or directory")
+
 # run a command defined in the PATH
 def sourced_command(args):
     try:
@@ -91,6 +108,7 @@ BUILT_IN_COMMANDS.update({
                 "echo": echo_command,
                 "type": type_command,
                 "pwd": pwd_command,
+                "cd": cd_command,
                 
                 })
 # source all available binaries
@@ -110,7 +128,6 @@ def command_parser(raw_input):
         return
     header = command[0]
     if header not in BUILT_IN_COMMANDS:
-        #sourcing()
         if header not in SOURCED_COMMANDS:
             print(f"{header}: command not found")
             return
@@ -125,7 +142,6 @@ def signal_handler(sig, frame):
     stdout.flush()
 
 def main():
-    
     try:
         signal(SIGINT, signal_handler)
         stdout.write(SHELL_PROMPT)
