@@ -18,7 +18,7 @@ except (ModuleNotFoundError, ImportError) as exceptions:
 """
 USERNAME = getuser()
 MACHINE_USERNAME = graphics_text_parser(USERNAME+'@'+gethostname(), "BOLD", "BRIGHT_GREEN")
-PWD = graphics_text_parser(getcwd().replace(f"/home/{USERNAME}", "~"), "BOLD", "BRIGHT_BLUE")
+PWD = graphics_text_parser(getcwd().replace(f"environ["HOME"]", "~"), "BOLD", "BRIGHT_BLUE")
 SHELL_PROMPT = f"{MACHINE_USERNAME+':'+PWD}$ "
 """
 
@@ -84,6 +84,8 @@ def cd_command(args):
         return
     else:
         try:
+            args[0]=args[0].replace("~", environ ["HOME"])
+            
             chdir(args[0])
         except FileNotFoundError:
             print(f"bash: cd: {args[0]}: No such file or directory")
