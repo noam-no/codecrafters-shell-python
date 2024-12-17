@@ -1,20 +1,40 @@
 #!/usr/bin/env python3
 
-import sys, re, signal
+# Importing libraries
+from sys import exit, stdout
+from os import getcwd
+from re import match
+from signal import signal, SIGINT
+from getpass import getuser
+from socket import gethostname
 
-def signal_handler(sig, frame):
-    print("")
-    sys.stdout.write("$ ")
-    sys.stdout.flush()
+from .ansi_customization import ANSI_CHAR, graphics_text_parser
 
+# Constants
+# To use later codecrafter doesn't like it for now ...
+"""
+USERNAME = getuser()
+MACHINE_USERNAME = graphics_text_parser(USERNAME+'@'+gethostname(), "BOLD", "BRIGHT_GREEN")
+PWD = graphics_text_parser(getcwd().replace(f"/home/{USERNAME}", "~"), "BOLD", "BRIGHT_BLUE")
+SHELL_PROMPT = f"{MACHINE_USERNAME+':'+PWD}$ "
+"""
+SHELL_PROMPT = "$ "
+EXIT_CODE_DEFAULT = 0
+EXIT_CODE_ERROR = 1
+
+COMMANDS = {"exit": None,
+            "echo": None,
+            "type": None}
+
+BUILT_IN = ["exit", "echo", "type"]
 
 def exit_command(args):
     print("exit")
     if len(args) == 0:
         args.append(0)
-        pass
+        
     
-    elif re.match(r"\D",args[0]) != None:
+    elif match(r"\D",args[0]) != None:
         print(f"bash: exit: {args[0]}: numeric argument required")
         args[0] = 0
     
@@ -22,30 +42,48 @@ def exit_command(args):
         print("bash: exit: too many arguments")
         return
     
-    sys.exit(int(args[0]))
+    exit(int(args[0]))
 
 def echo_command(args):
     print(" ".join(args))
 
-commands = {"exit": exit_command,
-            "echo": echo_command}
+def type_command(args):
+    if len(args) > 0:
+        for arg in args:
+            if arg in BUILT_IN:
+                print(f"{arg} is a shell builtin")
+            else:
+                print(f"bash: type: {arg}: not found")
+
+COMMANDS.update({
+                "exit": exit_command,
+                "echo": echo_command,
+                "type": type_command,
+                
+                })
 
 def command_parser(raw_input):
     command = raw_input.split()
     if not command:
         return
     header = command[0]
-    if header not in commands:
+    if header not in COMMANDS:
         print(f"{header}: command not found")
     else:
-        commands[header](command[1:])
+        COMMANDS[header](command[1:])
+
+# Intercepts the SIGINT signal (Ctrl+C)
+def signal_handler(sig, frame):
+    print("")
+    stdout.write(SHELL_PROMPT)
+    stdout.flush()
 
 def main():
     while True:
         try:
-            signal.signal(signal.SIGINT, signal_handler)
-            sys.stdout.write("$ ")
-            sys.stdout.flush()
+            signal(SIGINT, signal_handler)
+            stdout.write(SHELL_PROMPT)
+            stdout.flush()
 
             # Wait for user input
             command = input()
