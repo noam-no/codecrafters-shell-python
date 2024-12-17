@@ -7,6 +7,8 @@ from re import match
 from signal import signal, SIGINT
 from getpass import getuser
 from socket import gethostname
+from subprocess import run, CalledProcessError
+
 try:
     from .ansi_customization import ANSI_CHAR, graphics_text_parser
 except (ModuleNotFoundError, ImportError) as exceptions:
@@ -25,11 +27,11 @@ PATH = environ["PATH"].split(":") # PATH of the system for binaries
 SHELL_PROMPT = "$ "
 EXIT_CODE_DEFAULT = 0
 EXIT_CODE_ERROR = 1
-COMMANDS = {"exit": None,
+BUILT_IN_COMMANDS = {"exit": None,
             "echo": None,
             "type": None}
+SOURCED_COMMANDS = {}
 
-BUILT_IN = ["exit", "echo", "type"]
 
 def exit_command(args):
     print("exit")
@@ -53,7 +55,7 @@ def echo_command(args):
 def type_command(args):
     if len(args) > 0:
         for arg in args:
-            if arg in BUILT_IN:
+            if arg in BUILT_IN_COMMANDS:
                 print(f"{arg} is a shell builtin")
             else:
                 for p in PATH:
@@ -66,22 +68,51 @@ def type_command(args):
                         return
                 print(f"bash: type: {arg}: not found")
 
-COMMANDS.update({
+# run a command defined in the PATH
+def sourced_command(args):
+    try:
+        binary = SOURCED_COMMANDS[args[0]]
+        result = run([binary]+args[1:], capture_output=True, text=True)
+        if result.stdout:
+            
+            print(result.stdout.strip())
+        if result.stderr:
+            print(result.stderr.strip())
+    except CalledProcessError as e:
+        print(f"bash: {args[0]}: {e}")
+    except FileNotFoundError:
+        print(f"bash: {args[0]}: No such file or directory")
+
+BUILT_IN_COMMANDS.update({
                 "exit": exit_command,
                 "echo": echo_command,
                 "type": type_command,
                 
                 })
+# source all available binaries
+def sourcing():
+    for p in PATH:
+        try:
+            binaries = [f for f in listdir(p) if path.isfile(path.join(p, f))]
+        except FileNotFoundError:
+            pass
+        for binary in binaries:
+            # if (binary not in BUILT_IN_COMMANDS) and (binary not in SOURCED_COMMANDS):
+            SOURCED_COMMANDS[binary] = path.join(p, binary)
 
 def command_parser(raw_input):
     command = raw_input.split()
     if not command:
         return
     header = command[0]
-    if header not in COMMANDS:
-        print(f"{header}: command not found")
+    if header not in BUILT_IN_COMMANDS:
+        #sourcing()
+        if header not in SOURCED_COMMANDS:
+            print(f"{header}: command not found")
+            return
+        sourced_command(command)
     else:
-        COMMANDS[header](command[1:])
+        BUILT_IN_COMMANDS[header](command[1:])
 
 # Intercepts the SIGINT signal (Ctrl+C)
 def signal_handler(sig, frame):
@@ -90,12 +121,22 @@ def signal_handler(sig, frame):
     stdout.flush()
 
 def main():
+    try:
+        signal(SIGINT, signal_handler)
+        stdout.write(SHELL_PROMPT)
+        stdout.flush()
+        # Wait for user input
+        command = input()
+        sourcing()
+        command_parser(command)
+    except EOFError:
+            print("")
+            exit_command(["1"])
     while True:
         try:
             signal(SIGINT, signal_handler)
             stdout.write(SHELL_PROMPT)
             stdout.flush()
-
             # Wait for user input
             command = input()
             command_parser(command)
