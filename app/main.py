@@ -14,12 +14,13 @@ def exit_command(args):
     
     elif re.match(r"\D",args[0]) != None:
         print(f"bash: exit: {args[0]}: numeric argument required")
+        args[0] = 0
     
     elif len(args) > 1:
         print("bash: exit: too many arguments")
         return
     
-    sys.exit(0)
+    sys.exit(int(args[0]))
 
 
 commands = {"exit": exit_command}
