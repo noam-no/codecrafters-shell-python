@@ -7,9 +7,11 @@ def signal_handler(sig, frame):
     sys.stdout.write("$ ")
     sys.stdout.flush()
 
+
 def exit_command(args):
     print("exit")
     if len(args) == 0:
+        args.append(0)
         pass
     
     elif re.match(r"\D",args[0]) != None:
@@ -22,8 +24,11 @@ def exit_command(args):
     
     sys.exit(int(args[0]))
 
+def echo_command(args):
+    print(" ".join(args))
 
-commands = {"exit": exit_command}
+commands = {"exit": exit_command,
+            "echo": echo_command}
 
 def command_parser(raw_input):
     command = raw_input.split()
