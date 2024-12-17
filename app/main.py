@@ -84,7 +84,7 @@ def cd_command(args):
         return
     else:
         try:
-            args[0]=args[0].replace("~", environ ["HOME"])
+            args[0]=args[0].replace("~", environ["HOME"])
             
             chdir(args[0])
         except FileNotFoundError:
