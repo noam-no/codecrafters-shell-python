@@ -8,6 +8,7 @@ from signal import signal, SIGINT
 from getpass import getuser
 from socket import gethostname
 from subprocess import run, CalledProcessError
+from ast import literal_eval
 
 try:
     from .ansi_customization import ANSI_CHAR, graphics_text_parser
@@ -124,12 +125,15 @@ def sourcing():
                 SOURCED_COMMANDS[binary] = path.join(p, binary)
 
 def command_parser(raw_input):
-    if not "'" in raw_input:
+    if not "'" in raw_input and not '"' in raw_input:
         command = raw_input.split()
-    else:
+    elif "'" in raw_input and not '"' in raw_input:
         command = raw_input.split(" ",1)
         command = [command[0]] + command[1].split("'")[1::2]
-    
+    elif '"' in raw_input:
+        command = raw_input.split(" ",1)
+        command = [command[0]] + command[1].split('"')[1::2]
+
     if not command:
         return
     header = command[0]
