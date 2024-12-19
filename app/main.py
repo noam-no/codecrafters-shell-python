@@ -96,7 +96,6 @@ def sourced_command(args):
         binary = SOURCED_COMMANDS[args[0]]
         result = run([binary]+args[1:], capture_output=True, text=True)
         if result.stdout:
-            
             print(result.stdout.strip())
         if result.stderr:
             print(result.stderr.strip())
@@ -125,7 +124,12 @@ def sourcing():
                 SOURCED_COMMANDS[binary] = path.join(p, binary)
 
 def command_parser(raw_input):
-    command = raw_input.split()
+    if not "'" in raw_input:
+        command = raw_input.split()
+    else:
+        command = raw_input.split(" ",1)
+        command = [command[0]] + command[1].split("'")[1::2]
+    
     if not command:
         return
     header = command[0]
