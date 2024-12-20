@@ -148,17 +148,38 @@ def sourcing():
         pass
 
 def command_parser(raw_input):
+    
     if not "'" in raw_input and not '"' in raw_input:
         command = raw_input.split()
         for i in range(1,len(command)):
             if "\\" in command[i]:
                 command[i] = command[i].replace("\\","")
+    
+    
     elif "'" in raw_input and not '"' in raw_input:
         command = raw_input.split(" ",1)
-        command = [command[0]] + command[1].split("'")[1::2]
-    elif '"' in raw_input:
+        if len(command) > 1:
+            command = [command[0]] + command[1].split("'")[1::2]
+    
+    
+    elif '"' in raw_input and not "'" in raw_input:
         command = raw_input.split(" ",1)
-        command = [command[0]] + command[1].split('"')[1::2]
+        if len(command) > 1:
+            command = [command[0]] + command[1].split('"')[1::2]
+    
+    
+    elif ('"' in raw_input and "'" in raw_input) and (raw_input.index('"') > raw_input.index("'")):
+        command = raw_input.split(" ",1)
+        if len(command) > 1:
+            command = [command[0]] + command[1].split("'")[1::2]
+    
+    
+    elif ('"' in raw_input and "'" in raw_input) and (raw_input.index('"') < raw_input.index("'")):
+        command = raw_input.split(" ", 1)
+        if len(command) > 1:
+            command = [command[0]] + command[1].split('"')[1::2]
+    
+    
     if not command:
         return
     
@@ -187,7 +208,7 @@ def main():
         command = input()
         sourcing_thread = Thread(target=sourcing)
         sourcing_thread.start()
-        sourcing_thread.join()
+        #sourcing_thread.join()
         command_parser(command)
     except EOFError:
             print("")
