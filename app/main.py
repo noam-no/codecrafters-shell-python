@@ -9,6 +9,7 @@ from getpass import getuser
 from socket import gethostname
 from subprocess import run, CalledProcessError
 from ast import literal_eval
+from threading import Thread
 
 try:
     from .ansi_customization import ANSI_CHAR, graphics_text_parser
@@ -115,6 +116,8 @@ BUILT_IN_COMMANDS.update({
                 })
 # source all available binaries
 def sourcing():
+    global sourced
+    sourced = 0
     for p in PATH:
         try:
             binaries = [f for f in listdir(p) if path.isfile(path.join(p, f))]
@@ -123,19 +126,42 @@ def sourcing():
         for binary in binaries:
             if (binary not in BUILT_IN_COMMANDS) and (binary not in SOURCED_COMMANDS):
                 SOURCED_COMMANDS[binary] = path.join(p, binary)
+    sourced = 1
+    # try to source aliases but has limitations for paths or commands with sudo (ie: doesn't work)
+    
+    try:
+        with open(environ["HOME"]+"/.bashrc") as f:
+            for line in f:
+                if line.startswith("alias"):
+                    alias = line.split("alias ")[1].split("=")
+                    SOURCED_COMMANDS[alias[0]] = alias[1].replace("\n","")
+    except FileNotFoundError:
+        pass
+    try:
+        with open(environ["HOME"]+"/.bash_aliases") as f:
+            for line in f:
+                if "alias" in line and "/" not in line:
+                    alias = line.split("alias ")[1].split("=")
+                    if "sudo" not in alias[1]:
+                        SOURCED_COMMANDS[alias[0]] = SOURCED_COMMANDS[alias[1].replace("\n","").strip("\'")]
+    except FileNotFoundError:
+        pass
 
 def command_parser(raw_input):
     if not "'" in raw_input and not '"' in raw_input:
         command = raw_input.split()
+        for i in range(1,len(command)):
+            if "\\" in command[i]:
+                command[i] = command[i].replace("\\","")
     elif "'" in raw_input and not '"' in raw_input:
         command = raw_input.split(" ",1)
         command = [command[0]] + command[1].split("'")[1::2]
     elif '"' in raw_input:
         command = raw_input.split(" ",1)
         command = [command[0]] + command[1].split('"')[1::2]
-
     if not command:
         return
+    
     header = command[0]
     if header not in BUILT_IN_COMMANDS:
         if header not in SOURCED_COMMANDS:
@@ -151,6 +177,7 @@ def signal_handler(sig, frame):
     stdout.write(SHELL_PROMPT)
     stdout.flush()
 
+
 def main():
     try:
         signal(SIGINT, signal_handler)
@@ -158,7 +185,8 @@ def main():
         stdout.flush()
         # Wait for user input
         command = input()
-        sourcing()
+        sourcing_thread = Thread(target=sourcing)
+        sourcing_thread.start()
         command_parser(command)
     except EOFError:
             print("")
