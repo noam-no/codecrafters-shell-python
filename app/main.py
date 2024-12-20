@@ -187,6 +187,7 @@ def main():
         command = input()
         sourcing_thread = Thread(target=sourcing)
         sourcing_thread.start()
+        sourcing_thread.join()
         command_parser(command)
     except EOFError:
             print("")
